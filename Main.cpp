@@ -7,7 +7,7 @@
 #include"EBO.h"
 #include"VAO.h"
 
-const int a = 1000;
+const int a = 50;
 GLfloat* vertices = new GLfloat[(a) * (a) * 6 * 4];
 GLuint* indices = new GLuint[(a) * (a) * 6];
 bool state[a][a], newstate[a][a];
@@ -130,6 +130,7 @@ int main() {
 
 	//Creating a shader object
 	Shader shaderProgram("default.vert", "default.frag");
+	shaderProgram.Activate();
 	//Creating a vertex array object and binding it
 
 	init();
@@ -138,26 +139,51 @@ int main() {
 	VAO1.Bind();
 	VAO1.LinkAttrib(VBO1, 0, 3, GL_FLOAT, 6 * sizeof(float), (void*)0);
 	VAO1.LinkAttrib(VBO1, 1, 3, GL_FLOAT, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	int prevtime = clock(), framestart = clock(), a1 = 0, a2 = 1;
+	int prevtime_update = clock(), prevtime_buffupdate = clock(), a1 = 0, a2 = 1;
+	int time_buffer = 500;
+	bool is_auto = 0;
 	while (!glfwWindowShouldClose(window)) {
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-		if (clock() - prevtime > 0) {
+		if (clock() - prevtime_update > time_buffer &&(is_auto || glfwGetKey(window,GLFW_KEY_R))) {
 			update();
 			a1++;
-			prevtime = clock();
+			prevtime_update = clock();
 		}
-		if (a1 % 100 == 0)std::cout << a1 << std::endl;
+		if (clock() - prevtime_buffupdate > 300)
+		{
+			if (glfwGetKey(window, (int)'-')) {
+				time_buffer -= 50;
+				prevtime_buffupdate = clock();
+			}
+			if (glfwGetKey(window, (int)'=')) {
+				time_buffer += 50;
+				prevtime_buffupdate = clock();
+			}
+			if (glfwGetKey(window, (int)'T')) {
+				is_auto ^= 1;
+				prevtime_buffupdate = clock();
+			}
+			if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+				VAO1.Delete();
+				VBO1.Delete();
 
-		//Creating a vertex buffer object
+				shaderProgram.Delete();
+				delete[] vertices;
+				delete[] indices;
+
+				glfwDestroyWindow(window);
+				glfwTerminate();
+				exit(0);
+			}
+		}
+		
+		
 
 		//Creating a elements buffer object
 		EBO EBO1(indices, sizeof(GLuint) * num * 6);
 
-		//Linking a VBO to a VAO
-
-
-		shaderProgram.Activate();
+		
 		//VAO1.Bind();
 		glDrawElements(GL_TRIANGLES, num * 6, GL_UNSIGNED_INT, 0);
 		glfwSwapBuffers(window);
